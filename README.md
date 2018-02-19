@@ -62,6 +62,9 @@ $loader->addNamespace(
 $mail = new PHPMailer;
 ```
 
+### Demo and Test
+
+http://jspit.de/check/phpcheck.jspitautoload.php
 
 ### Requirements
 
