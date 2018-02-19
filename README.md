@@ -66,3 +66,9 @@ $mail = new PHPMailer;
 ### Requirements
 
 - PHP 5.3.8+
+
+### Links
+
+PSR-4 Example Implementations
+https://www.php-fig.org/psr/psr-4/examples/
+
