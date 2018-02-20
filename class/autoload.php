@@ -3,13 +3,12 @@
 /**
 .---------------------------------------------------------------------------.
 |  Software: autoload - PHP Autoloader Class                                |
-|   Version: 1.0 Beta                                                       |
-|      Date: 2018-02-19                                                     |
+|   Version: 1.1 Beta                                                       |
+|      Date: 2018-02-20                                                     |
 | ------------------------------------------------------------------------- |
 | Copyright © 2017-2018, Peter Junk (alias jspit). All Rights Reserved.     |
 | ------------------------------------------------------------------------- |
-|   License: Distributed under the Lesser General Public License (LGPL)     |
-|            http://www.gnu.org/copyleft/lesser.html                        |
+| License: Distributed under MIT License                                    |
 | This program is distributed in the hope that it will be useful - WITHOUT  |
 | ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or     |
 | FITNESS FOR A PARTICULAR PURPOSE.                                         |
@@ -55,71 +54,61 @@ class autoload
    * if searchMask use # how class.#.php, classname set tolower
    * return void
    */
-  public function addPath($path = "", $searchMask = "")
+  public function addPath($path = "", $searchMask = "*.php")
   {
-    if(!preg_match('~^(\w+:|/|\\\)~',$path)) {
-      //if path is relativ use __DIR__ as basis
-      $path = __DIR__ . '/'. trim($path,"/\\");
-    }
-
-    foreach(explode(",",$searchMask) as $mask) {
-      $this->addNamespace("", $path, $mask);
-    }
+    $delim = '\\';  //psr-4
+    $this->registerPath("", $path, $searchMask , $delim);
   }
 
   /**
    * Adds a base directory for a namespace prefix.
    *
    * @param string $prefix The namespace prefix.
-   * @param string $base_dir A base directory for class files in the
+   * @param string $path A base directory for class files in the
    * namespace.
    * @param string $mask 
    * @return void
    */
-  public function addNamespace($prefix, $base_dir,$mask = "*.php")
+  public function addNamespace($prefix, $path, $mask = "*.php")
   {
     $delim = '\\';  //psr-4
-    // normalize namespace prefix
-    $prefix = trim($prefix, $delim) .$delim;
-
-    // normalize the base directory with a trailing separator
-    $base_dir = rtrim($base_dir, "\\/") . '/';
-
-    // initialize the namespace prefix array
-    if (isset($this->register[$prefix]) === false) {
-        $this->register[$prefix] = array('delim' => $delim);
-    }
-
-    // retain the base directory for the namespace prefix
-    array_push($this->register[$prefix], array($base_dir,$mask));
+    $this->registerPath($prefix, $path, $mask , $delim);
   }
 
   /**
    * Adds a base directory for psr-0 prefix.
    *
    * @param string $prefix The namespace prefix.
-   * @param string $base_dir A base directory for class files in the
+   * @param string $path A base directory for class files in the
    * namespace.
    * @param string $mask 
    * @return void
    */
-  public function addPsr0Path($prefix, $base_dir,$mask = "*.php")
+  public function addPsr0Path($prefix, $path, $mask = "*.php")
   {
     $this->usePsr0 = true;
     $delim = '_';  //psr-0
+    $this->registerPath($prefix, $path, $mask , $delim);  
+  }
+  
+  protected function registerPath($prefix, $path, $mask , $delim)
+  {
     // normalize namespace prefix
     $prefix = trim($prefix, $delim) .$delim;
-
-    // normalize the base directory with a trailing separator
-    $base_dir = rtrim($base_dir, "\\/") . '/';
-
+    
+    //abs Path
+    $base_dir = $this->absPath($path) . '/';
+    
     // initialize the namespace prefix array
     if (isset($this->register[$prefix]) === false) {
         $this->register[$prefix] = array('delim' => $delim);
     }
 
-    // retain the base directory for the namespace prefix
-    array_push($this->register[$prefix], array($base_dir,$mask));
+    // retain the base directory for the namespace prefix and masks
+    foreach(explode(",",$mask) as $curMask) {
+      array_push($this->register[$prefix], array($base_dir,$curMask));
+    }
+  
   }
   
   
@@ -142,6 +131,7 @@ class autoload
       $prefix = $class;
       // work backwards through the namespace names of the fully-qualified
       // class name to find a mapped file name
+      $mapped_file = false;
       while(true) {
           $pos = strrpos($prefix, $delim);
           if($pos === false) {
@@ -153,10 +143,15 @@ class autoload
             // the rest is the relative class name
             $relative_class = substr($class, $pos + 1);
           }
-          $mapped_file = $this->loadMappedFile($prefix, $relative_class, $delim);
-          if ($mapped_file) {
-            $this->loadClasses[$class] = $mapped_file; 
-            return $mapped_file;
+          
+          // are there any base directories for this namespace prefix
+          // and are the same delimiter
+          if(isset($this->register[$prefix]) AND $this->register[$prefix]['delim'] == $delim) {
+            $mapped_file = $this->loadMappedFile($prefix, $relative_class, $delim);
+            if ($mapped_file) {
+              $this->loadClasses[$class] = $mapped_file; 
+              return $mapped_file;
+            }
           }
           if($pos === false) {
             // never found a mapped file
@@ -180,11 +175,7 @@ class autoload
   {
     $relative_class = str_replace($delim, '/', $relative_class);
     list($pathPart, $className) = $this->splitNsClassname($relative_class,'/');
-    // are there any base directories for this namespace prefix?
-    if (isset($this->register[$prefix]) === false) {
-      return false;
-    }
-
+    
     // look through base directories for this namespace prefix
     foreach ($this->register[$prefix] as $key => $baseDirAndMask) {
         if(! is_numeric($key)) continue;
@@ -273,7 +264,7 @@ class autoload
  /*
   * return array('"Bar\foo\","baz") from str = "Bar\foo\baz"
   */
-  private function splitNsClassname($str, $delimiter = "\\")
+  protected function splitNsClassname($str, $delimiter = "\\")
   {
     $pos = strrpos($str,$delimiter);
     if($pos > 0) {
@@ -284,6 +275,30 @@ class autoload
     }
     return array("",trim($str,$delimiter));
   
+  }
+ /*
+  * expands all resolves references to /./, /../ 
+  * and return a absolute pathname
+  */
+  protected function absPath($path)
+  {
+    $path = strtr($path,'\\','/');
+    if($path == "..") $path .= "/";
+    if($path == ".") {
+      $path = strtr(getcwd(),'\\','/');
+    }
+    elseif(substr($path,0,2) == './') {
+      $path = strtr(getcwd(),'\\','/').substr($path,1);
+    }
+    elseif(!preg_match('~^(\w+:|/)~',$path)){
+      $path = strtr(__DIR__,'\\','/')."/".$path;
+    }
+    
+    for($count=1; strpos($path,"/../") !== false AND $count > 0; ){
+      $path = preg_replace('~/[^/\.]+/\.\./~','/',$path,-1, $count);
+    }
+    
+    return rtrim($path,"/");  
   }
 
 }
