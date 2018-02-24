@@ -7,6 +7,7 @@ If exist special patterns for filenames like here jspit-de or own directory stru
 - Very easy to use for classes without namespaces
 - May use special pattern for filenames how "class.*.php" 
 - Paths for classes with namespaces can be added
+- Optional loading and saving in config files
 
 ### Usage
 
@@ -64,15 +65,18 @@ $mail = new PHPMailer;
 
 ### Demo and Test
 
-http://jspit.de/check/phpcheck.jspitautoload.php
+http://jspit.de/check/phpcheck.autoload.php
+
+The test shows how the add methods handle paths
+
+http://jspit.de/check/phpcheck.autoload.abspath.php
 
 ### Requirements
 
-- PHP 5.3.8+
+- PHP 5.4+ (5.3.8+)
 
 ### Links
 
 PSR-4 Example Implementations
 
 https://www.php-fig.org/psr/psr-4/examples/
-
