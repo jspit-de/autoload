@@ -3,8 +3,8 @@
 /**
 .---------------------------------------------------------------------------.
 |  Software: autoload - PHP Autoloader Class                                |
-|   Version: 1.1 Beta                                                       |
-|      Date: 2018-02-20                                                     |
+|   Version: 1.3                                                            |
+|      Date: 2018-02-23                                                     |
 | ------------------------------------------------------------------------- |
 | Copyright © 2017-2018, Peter Junk (alias jspit). All Rights Reserved.     |
 | ------------------------------------------------------------------------- |
@@ -26,15 +26,51 @@ class autoload
   
   
  /*
+  * autoload constructor
   * @param string $mask The pattern for filenames how "*.php" or "class.*.php"
   * may be a list of patterns "class.*.php,*.php"
   * without argument autoload must start with register-method after add-Methods
   */
-  public function __construct($mask = false) {
-    if($mask) {
-      $this->addPath(__DIR__, $mask);
+  public function __construct($mask = false) 
+  {
+    if(is_string($mask)) {
+      $this->addPath(static::getClassDir(), $mask);
       $this->register();
     }
+  }
+  
+ /*
+  * start autoload which searches for class-files of type $type 
+  * in the directory of the autoloader 
+  * @param string $type type of classfile, "*.php" is default 
+  * @return instance of autoload
+  */
+  public static function start($type = "*.php")
+  {
+    return  new static($type);
+  }
+
+ /*
+  * create a autoloader object
+  * load config for autoload from a json-file
+  * start autoload
+  * @param string filename
+  * @return object (instance of autoload)
+  */
+  public static function startConfig($fileName = null)
+  {
+    
+    if($fileName === null){ 
+      $fileName = static::getClassDir() . "/" . __CLASS__ . ".json";
+    }
+    
+    $loader = new static(false);
+    
+    $loader->loadConfig($fileName);
+   
+    $loader->register();
+    
+    return $loader;
   }
 
   /**
@@ -43,7 +79,79 @@ class autoload
    */
   public function register()
   {
-     spl_autoload_register(array($this, 'loadClass'));
+    //throw exception if error
+    spl_autoload_register(array($this, 'loadClass'), true, false);
+  }
+
+ /*
+  * helper function
+  * return a array with register infos
+  * may use for tests and debugging 
+  */
+  public function getConfig() 
+  {  
+    $config = array();
+
+    foreach($this->register as $nsPrefix => $entrys){
+      foreach($entrys as $key => $mixed){
+        if($key === 'delim') $delim = $mixed;
+        else {
+          $config[] = array(
+            "ns" => $nsPrefix,
+            "path" => $mixed[0],
+            "mask" => $mixed[1],
+            "delim" => $delim
+          );
+        }
+      }
+    }
+    
+    return $config;
+  }
+
+
+ /*
+  * load config for autoload from a json-file
+  * @param string filename
+  */
+  public function loadConfig($fileName)
+  {
+    if(!file_exists($fileName)) {
+      trigger_error("Error " . __METHOD__ . " : config-file '$fileName' not found", E_USER_WARNING);
+      return false;
+    }
+    $config = json_decode(file_get_contents($fileName));
+    if($config) {
+      foreach($config as $entry){
+        if(isset($entry->ns, $entry->path, $entry->mask, $entry->delim)) {
+          $this->registerPath($entry->ns, $entry->path, $entry->mask, $entry->delim);
+        }
+        else {
+          trigger_error("Error " . __METHOD__ . " : Missing property for '$ns' in config-file '$fileName'", E_USER_WARNING);
+        }
+      }
+      return true;
+    }
+    trigger_error("Error " . __METHOD__ . " : config-file '$fileName' contain invalid JSON", E_USER_WARNING);
+    return false;
+  }
+
+ /*
+  * save current config for autoload as a json-file
+  * @param string filename
+  * @return bool true if ok
+  */
+  public function saveConfig($fileName)
+  {
+    $jsonArray = $this->getConfig();
+
+    $json = defined('JSON_PRETTY_PRINT') 
+      ? json_encode($jsonArray, JSON_PRETTY_PRINT)
+      : json_encode($jsonArray)
+    ;
+
+    $count = file_put_contents($fileName,$json);
+    return $count > 1;
   }
 
   /*
@@ -90,7 +198,17 @@ class autoload
     $delim = '_';  //psr-0
     $this->registerPath($prefix, $path, $mask , $delim);  
   }
-  
+
+  /**
+   * register a filepath for a namespace-prefix
+   *
+   * @param string $prefix The namespace prefix.
+   * @param string $path A base directory for class files in the
+   * namespace.
+   * @param string $mask type of file how "*.php" or "class.#.php"
+   * @param string $delim Delimiter for psr-4 "\\" or psr-0 "_"
+   * @return void
+   */
   protected function registerPath($prefix, $path, $mask , $delim)
   {
     // normalize namespace prefix
@@ -155,7 +273,7 @@ class autoload
           }
           if($pos === false) {
             // never found a mapped file
-            trigger_error("Error Autoload: file for class '$class' not found", E_USER_WARNING);
+            trigger_error("Error " . __METHOD__ ." : file for class '$class' not found", E_USER_WARNING);
             return false;  
           }
           $prefix = rtrim($prefix, $delim);
@@ -221,7 +339,7 @@ class autoload
       }
       else {
         trigger_error(
-          "Error Autoload: file '$file' not contain class '".$this->curClass."'",
+          "Error " . __METHOD__ . " : file '$file' not contain class '".$this->curClass."'",
           E_USER_WARNING
         );
         return false;
@@ -231,16 +349,52 @@ class autoload
   }
   
  /*
-  * return a array with register infos
-  * may use for tests and debugging 
+  * Removes all global registered autoload functions
   */
-  public function getConfig() 
-  {  
-    return $this->register;
+  public static function resetAll() 
+  {
+    $countRemove = 0;
+    $fktArr = spl_autoload_functions();
+    if(is_array($fktArr)) {
+      foreach($fktArr as $fct) {
+        $countRemove += (int)spl_autoload_unregister($fct);
+      }
+    }
+    return $countRemove;
   }
 
  /*
+  * Removes registered autoload functions
+  */
+  public function reset() 
+  {
+    $r = spl_autoload_unregister(array($this, "loadClass"));
+    return $r;
+  }
+
+  
+ /*
+  * returns the directory of this class
+  * return the path with slash as path separator also for Window
+  */
+  public static function getClassDir()
+  {
+    return strtr(__DIR__,'\\','/');
+  }
+  
+ /*
+  * Gets the current working directory
+  * return the path with slash as path separator also for Window
+  */
+  public static function getCurWorkDir()
+  {
+    return strtr(getcwd(),'\\','/');
+  }
+  
+ /*
+  * helper function
   * get a array with pairs 'classname' => 'PathAndFileName'
+  * may use for tests and debugging 
   */
   public function getLoadClasses()
   {
@@ -248,6 +402,7 @@ class autoload
   }
   
  /*
+  * helper function
   * get path and filename from given className
   * class: object or full Class-Name (with Namespace if use) 
   * return false if $class not found
@@ -260,6 +415,33 @@ class autoload
     }
     return false;
   }
+  
+ /*
+  * expands all resolves references to /./, /../ 
+  * and return a absolute pathname
+  * works much like realpath 
+  * without checking the existence of the directories
+  */
+  public static function absPath($path)
+  { 
+    if($path == "")  return static::getClassDir();
+
+    $path = rtrim(strtr($path,'\\','/'),"/") . "/";
+
+    if(substr($path,0,2) == './') {
+      $path = strtr(static::getCurWorkDir(),'\\','/').substr($path,1);
+    }
+    elseif(!preg_match('~^(\w+:|/)~',$path)){
+      $path = strtr(static::getClassDir(),'\\','/')."/".$path;
+    }
+    
+    for($count=1; strpos($path,"/../") !== false AND $count > 0; ){
+      $path = preg_replace('~/[^/\.]+/\.\./~','/',$path,-1, $count);
+    }
+    
+    return rtrim($path,"/");  
+  }
+
     
  /*
   * return array('"Bar\foo\","baz") from str = "Bar\foo\baz"
@@ -275,30 +457,6 @@ class autoload
     }
     return array("",trim($str,$delimiter));
   
-  }
- /*
-  * expands all resolves references to /./, /../ 
-  * and return a absolute pathname
-  */
-  protected function absPath($path)
-  {
-    $path = strtr($path,'\\','/');
-    if($path == "..") $path .= "/";
-    if($path == ".") {
-      $path = strtr(getcwd(),'\\','/');
-    }
-    elseif(substr($path,0,2) == './') {
-      $path = strtr(getcwd(),'\\','/').substr($path,1);
-    }
-    elseif(!preg_match('~^(\w+:|/)~',$path)){
-      $path = strtr(__DIR__,'\\','/')."/".$path;
-    }
-    
-    for($count=1; strpos($path,"/../") !== false AND $count > 0; ){
-      $path = preg_replace('~/[^/\.]+/\.\./~','/',$path,-1, $count);
-    }
-    
-    return rtrim($path,"/");  
   }
 
 }
