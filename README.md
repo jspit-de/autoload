@@ -1,6 +1,11 @@
 # PHP Autoloader
 
-If exist special patterns for filenames like here jspit-de or own directory structures for classes this autoloader can be used.
+I wanted something simple and basic that I could drop into any project with a basic directory structure
+and that works without limitations that must be met for complex installations like composer.
+This autoloader can also be used if there are special patterns for filenames like 
+class.{Classname}.php how used by jspit-de or if the classes are in special directories.
+The example of https://www.php-fig.org/psr/psr-4/examples/ served as the basis for this class. 
+The testability of the class with the environment phpcheck (https://github.com/jspit-de/phpcheck) was Important for me.
 
 ### Features
 
