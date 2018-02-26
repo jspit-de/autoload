@@ -3,9 +3,10 @@
 I wanted something simple and basic that I could drop into any project with a basic directory structure
 and that works without limitations that must be met for complex installations like composer.
 This autoloader can also be used if there are special patterns for filenames like 
-class.{Classname}.php how used by jspit-de or if the classes are in special directories.
+class.{Classname}.php or if the classes are in special directories.
 The example of https://www.php-fig.org/psr/psr-4/examples/ served as the basis for this class. 
-The testability of the class with the environment phpcheck (https://github.com/jspit-de/phpcheck) was important for me.
+Important for me was to ensure the testability of the class with the environment 
+phpcheck (https://github.com/jspit-de/phpcheck).
 
 ### Features
 
@@ -39,7 +40,7 @@ debug::write($today);
 
 #### Use class with namespace
 
-Example structure
+Example structure for using PHPMailer (V6.x)
 + class
   + autoload.php
   + class.debug.php
@@ -67,6 +68,10 @@ $loader->addNamespace(
 
 $mail = new PHPMailer;
 ```
+
+Note: The src directory can be easily retrieved by downloading
+the current PHPMailer release from github as a ZIP archive, 
+opening and copying src into the desired directory
 
 ### Demo and Test
 
