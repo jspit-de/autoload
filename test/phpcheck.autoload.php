@@ -4,6 +4,7 @@ error_reporting(E_ALL ^ (E_WARNING | E_USER_WARNING));
 ini_set('display_errors', 1);
 header('Content-Type: text/html; charset=UTF-8');
 
+//require __DIR__ . '/../class/class.debug.php';
 require __DIR__ . '/../class/autoload.php';
 require __DIR__ . '/../class/phpcheck.php';
 //autoload::start('#.php,class.#.php');
@@ -177,6 +178,44 @@ $t->checkEqual($result, $expect);
 $t->start('get array Load Classes');
 $result = $loader->getLoadClasses();
 $t->check($result, is_Array($result) AND !empty($result));
+
+//debug::write($loader->getConfig());
+$t->start('set + get Config');
+/*
+ * tests for load, save, set, put Config
+ */
+$config = array (
+  array (
+    'ns' => "\\",
+    'path' => "C:/XAMPP/htdocs/php/class/",
+    'mask' => "class.#.php",
+    'delim' => "\\",
+  ),
+  array (
+    'ns' => "\\",
+    'path' => "C:/XAMPP/htdocs/php/class/",
+    'mask' => "*.php",
+    'delim' => "\\",
+  )
+);
+$loader = new autoload;
+$ok = $loader->setConfig($config);
+$configCopy = $loader->getConfig();
+$t->check($ok, $ok AND ($configCopy == $config));
+
+$t->start('saveConfig');
+$tmpfname = tempnam(sys_get_temp_dir(), 'autoload.json');
+$ok = $loader->saveConfig($tmpfname);
+$t->check($ok, $ok);
+
+$t->start('startConfig');
+//load config from file + register
+$loader = autoload::startConfig($tmpfname);
+$t->check($loader, $loader->getConfig() == $config);
+
+//$t->start('load Config from file');
+
+
 
 //Ausgabe 
 echo $t->getHtml();
