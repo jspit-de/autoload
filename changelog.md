@@ -1,5 +1,9 @@
 # autoload Change Log
 
+### Version 1.3.2 (February 28th 2018)
+* Added setConfig
+* Code cleanup
+
 ### Version 1.3 (February 24th 2018)
 * Added load and save config-files
 * Some small bugs removed
