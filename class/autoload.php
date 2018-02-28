@@ -3,8 +3,8 @@
 /**
 .---------------------------------------------------------------------------.
 |  Software: autoload - PHP Autoloader Class                                |
-|   Version: 1.3                                                            |
-|      Date: 2018-02-23                                                     |
+|   Version: 1.3.2                                                          |
+|      Date: 2018-02-28                                                     |
 | ------------------------------------------------------------------------- |
 | Copyright © 2017-2018, Peter Junk (alias jspit). All Rights Reserved.     |
 | ------------------------------------------------------------------------- |
@@ -16,6 +16,9 @@
 */
 class autoload
 {
+  // The Autoload Version number.
+  const VERSION = '1.3';
+
   protected $register = array();
   
   private $loadClasses = array();
@@ -75,12 +78,14 @@ class autoload
 
   /**
    * Register loader with SPL autoloader stack.
-   * @return void
+   * @param bool $throw true: throw exeption if error
+   * @param bool $prepend : If true, it will prepend the autoloader on the autoload queue 
+   * @return true if ok, false if error
    */
-  public function register()
+  public function register($throw = true, $prepend = false)
   {
     //throw exception if error
-    spl_autoload_register(array($this, 'loadClass'), true, false);
+    spl_autoload_register(array($this, 'loadClass'), $throw, $prepend);
   }
 
  /*
@@ -109,6 +114,23 @@ class autoload
     return $config;
   }
 
+ /*
+  * set autoloader config
+  * @param array $config array with config infos
+  * @return bool true/false
+  */
+  public function setConfig(array $config) 
+  {  
+    foreach($config as $entry){
+      if(isset($entry['ns'], $entry['path'], $entry['mask'], $entry['delim'])) {
+        $this->registerPath($entry['ns'], $entry['path'], $entry['mask'], $entry['delim']);
+      }
+      else {
+        return false;
+      }
+    }
+    return true;
+  }
 
  /*
   * load config for autoload from a json-file
@@ -120,17 +142,11 @@ class autoload
       trigger_error("Error " . __METHOD__ . " : config-file '$fileName' not found", E_USER_WARNING);
       return false;
     }
-    $config = json_decode(file_get_contents($fileName));
+    $config = json_decode(file_get_contents($fileName),true);
     if($config) {
-      foreach($config as $entry){
-        if(isset($entry->ns, $entry->path, $entry->mask, $entry->delim)) {
-          $this->registerPath($entry->ns, $entry->path, $entry->mask, $entry->delim);
-        }
-        else {
-          trigger_error("Error " . __METHOD__ . " : Missing property for '$ns' in config-file '$fileName'", E_USER_WARNING);
-        }
-      }
-      return true;
+      if($this->setConfig($config)) return true; //ok
+      trigger_error("Error " . __METHOD__ . " : Missing property in config-file '$fileName'", E_USER_WARNING);
+      return false;
     }
     trigger_error("Error " . __METHOD__ . " : config-file '$fileName' contain invalid JSON", E_USER_WARNING);
     return false;
