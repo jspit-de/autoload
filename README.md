@@ -1,12 +1,12 @@
 # PHP Autoloader
 
-I wanted something simple and basic that I could drop into any project with a basic directory structure
+I wanted something simple and basic that I can drop into any project with a basic directory structure
 and that works without limitations that must be met for complex installations like composer.
 This autoloader can also be used if there are special patterns for filenames like 
 class.{Classname}.php or if the classes are in special directories.
-The example of https://www.php-fig.org/psr/psr-4/examples/ served as the basis for this class. 
-Important for me was to ensure the testability of the class with the environment 
-phpcheck (https://github.com/jspit-de/phpcheck).
+The testability of the class with the environment
+phpcheck (https://github.com/jspit-de/phpcheck) was important for me.
+The base idea you can find at https://www.php-fig.org/psr/psr-4/examples/.
 
 ### Features
 
