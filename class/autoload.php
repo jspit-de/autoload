@@ -3,8 +3,8 @@
 /**
 .---------------------------------------------------------------------------.
 |  Software: autoload - PHP Autoloader Class                                |
-|   Version: 1.3.2                                                          |
-|      Date: 2018-02-28                                                     |
+|   Version: 1.3.4                                                          |
+|      Date: 2018-03-20                                                     |
 | ------------------------------------------------------------------------- |
 | Copyright © 2017-2018, Peter Junk (alias jspit). All Rights Reserved.     |
 | ------------------------------------------------------------------------- |
@@ -17,7 +17,8 @@
 class autoload
 {
   // The Autoload Version number.
-  const VERSION = '1.3';
+  const VERSION = '1.3.4';
+  const WILDCARD_DIRAUTOLOAD = '_DIRAUTOLOAD_';
 
   protected $register = array();
   
@@ -57,7 +58,8 @@ class autoload
   * create a autoloader object
   * load config for autoload from a json-file
   * start autoload
-  * @param string filename
+  * @param string filename, without filename autoload.json 
+  *   is searched for in the same directory
   * @return object (instance of autoload)
   */
   public static function startConfig($fileName = null)
@@ -353,9 +355,15 @@ class autoload
       if(class_exists($this->curClass, false)) {
         return true;
       }
+      elseif(interface_exists($this->curClass, false)) {
+        return true;
+      }
+      elseif(function_exists("trait_exists") AND trait_exists($this->curClass, false)) {
+        return true;
+      }
       else {
         trigger_error(
-          "Error " . __METHOD__ . " : file '$file' not contain class '".$this->curClass."'",
+          "Error " . __METHOD__ . " : file '$file' not contain class (interface, trait) '".$this->curClass."'",
           E_USER_WARNING
         );
         return false;
@@ -441,7 +449,8 @@ class autoload
   public static function absPath($path)
   { 
     if($path == "")  return static::getClassDir();
-
+     
+    $path = str_replace(self::WILDCARD_DIRAUTOLOAD,static::getClassDir(),$path);
     $path = rtrim(strtr($path,'\\','/'),"/") . "/";
 
     if(substr($path,0,2) == './') {
