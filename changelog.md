@@ -1,5 +1,8 @@
 # autoload Change Log
 
+### Version 1.3.4 (March 20th 2018)
+* small bug removed
+
 ### Version 1.3.2 (February 28th 2018)
 * Added setConfig
 * Code cleanup
