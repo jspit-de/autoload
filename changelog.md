@@ -1,6 +1,7 @@
 # autoload Change Log
 
-### Version 1.3.4 (March 20th 2018)
+### Version 1.3.4 (March 22th 2018)
+* add const DIR
 * small bug removed
 
 ### Version 1.3.2 (February 28th 2018)
