@@ -69,9 +69,23 @@ $loader->addNamespace(
 $mail = new PHPMailer;
 ```
 
+Use a relative path to the autoload.php directory.
+
+```php
+use PHPMailer\PHPMailer\PHPMailer;
+
+require __DIR__ . '/../class/autoload.php';
+
+$loader = autoload::start('class.#.php,*.php');
+
+$loader->addNamespace('PHPMailer\\PHPMailer\\', 'PHPMailer/src/'); 
+
+$mail = new PHPMailer;
+```
+
 Note: The src directory can be easily retrieved by downloading
 the current PHPMailer release from github as a ZIP archive, 
-opening and copying src into the desired directory
+opening and copying src into the desired directory.
 
 ### Demo and Test
 
