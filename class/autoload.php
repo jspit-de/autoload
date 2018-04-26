@@ -4,7 +4,7 @@
 .---------------------------------------------------------------------------.
 |  Software: autoload - PHP Autoloader Class                                |
 |   Version: 1.3.4                                                          |
-|      Date: 2018-03-20                                                     |
+|      Date: 2018-03-22                                                     |
 | ------------------------------------------------------------------------- |
 | Copyright © 2017-2018, Peter Junk (alias jspit). All Rights Reserved.     |
 | ------------------------------------------------------------------------- |
@@ -18,6 +18,7 @@ class autoload
 {
   // The Autoload Version number.
   const VERSION = '1.3.4';
+  const DIR = __DIR__;
   const WILDCARD_DIRAUTOLOAD = '_DIRAUTOLOAD_';
 
   protected $register = array();
@@ -417,12 +418,14 @@ class autoload
   
  /*
   * helper function
+  * get a array with full 'classnames'  
   * get a array with pairs 'classname' => 'PathAndFileName'
   * may use for tests and debugging 
+  * @param withFilePath (Default false)
   */
-  public function getLoadClasses()
+  public function getLoadClasses($withFilePath = false)
   {
-    return $this->loadClasses;
+    return $withFilePath ? $this->loadClasses : array_keys($this->loadClasses);
   }
   
  /*
