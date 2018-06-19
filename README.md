@@ -31,7 +31,7 @@ Example structure
 ```php
 //index.php
 require __DIR__ . '/../class/autoload.php';
-$loader = new autoload("class.*.php);
+$loader = new autoload("class.*.php");
 
 $today = new dt('today');
 debug::write($today);
