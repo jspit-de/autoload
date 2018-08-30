@@ -38,6 +38,17 @@ debug::write($today);
 
 ```
 
+#### Use another directory
+
+```php
+require __DIR__ . '/../class/autoload.php';
+$loader = new autoload("class.*.php");
+// also look into include
+// # in searchMask looks for class names lowercase
+// default searchMask is "*.php"
+$loader->addPath(ROOTDIR . '/include','#.php');
+```
+
 #### Use class with namespace
 
 Example structure for using PHPMailer (V6.x)
