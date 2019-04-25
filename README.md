@@ -106,6 +106,10 @@ The test shows how the add methods handle paths
 
 http://jspit.de/check/phpcheck.autoload.abspath.php
 
+### Documentation
+
+http://jspit.de/tools/classdoc.php?class=autoload
+
 ### Requirements
 
 - PHP 5.4+ (5.3.8+)
